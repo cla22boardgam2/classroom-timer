@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리 반 쉬는시간</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    --bg: #1e3a8a;
+    --card: #fffaf0;
+    --text: #1e3a8a;
+    --muted: #5b6b94;
+    --line: #e6dcc6;
+    --brand: #5b6cf0;
+    --brand2: #8b6cf0;
+    --break1: #10b981;
+    --break2: #0ea5e9;
+    --warn: #e11d48;
+    --warn-bg: #fff1f2;
+    --radius: 24px;
+    --cream: #fffaf0;
+    --navy: #1e3a8a;
+    --ring: #1e3a8a;      /* 타이머 테두리 / 지금 수업 칸 */
+    --barc: #1e3a8a;      /* 진행 막대 */
+    --accent: #fde68a;    /* 반 이름 강조 / 선택 버튼 */
+    --ink2: #3b5bb5;      /* 오전·오후, 교시 글씨 */
+    --track: #dbe4f5;     /* 진행 막대 빈 부분 · 버튼 테두리 */
+    --inv: #26479f;       /* 쉬는 시간 칸 (테마 색 반전) */
+  }
+
+  /* ── 테마 ── body의 data-theme 값으로 색이 바뀌어요 */
+  body[data-theme="snow"] {
+    --ring: #c0262d; --ink2: #c0262d;
+    --barc: repeating-linear-gradient(45deg, #c0262d 0 10px, #fffaf0 10px 20px);
+  }
+  body[data-theme="green"] {
+    --bg: #1f5133; --navy: #1f5133; --text: #1f5133; --muted: #5d7364;
+    --ring: #b91c1c; --barc: #b91c1c; --accent: #fcd34d; --ink2: #b91c1c; --track: #e8dcc0; --inv: #2b6a45;
+  }
+  body[data-theme="red"] {
+    --bg: #9b1c24; --navy: #9b1c24; --text: #9b1c24; --muted: #8a5a5d;
+    --ring: #1f5133; --barc: #1f5133; --accent: #fcd34d; --ink2: #1f5133; --track: #e8dcc0; --inv: #b3262f;
+  }
+  body[data-theme="sleigh"] {
+    --bg: #16285e; --ring: #c8962e; --barc: #c8962e; --accent: #e9c46a; --ink2: #a8741a; --track: #ece3cf;
+  }
+
+  /* ── 배경 장식 (숲 · 썰매 · 마을 · 선물): 카드 뒤에만 보여요 ── */
+  #deco { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  #deco > * { position: absolute; display: block; }
+  #deco .hill { left: -5%; right: -5%; bottom: -40px; height: 120px; background: #fff; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+  #deco .ground { left: 0; right: 0; bottom: 0; height: 46px; background: #fff; }
+  #deco .sleigh { top: 26px; left: 0; animation: sleighFly 40s linear infinite; }
+  @keyframes sleighFly {
+    0% { transform: translateX(110vw); }
+    55% { transform: translateX(-420px); }
+    100% { transform: translateX(-420px); }
+  }
+  body.has-deco main { padding-bottom: 120px; }
+  body.has-deco.fs main { padding-bottom: 70px; }
+
+  /* ── 크리스마스 장식 (눈 오는 밤 · 초록 · 빨강 테마에서만) ── */
+  .xmas-only { display: none !important; }
+  body.xmas .xmas-only { display: revert !important; }
+  body.xmas .xmas-lights { display: flex !important; }
+  .xmas-lights {
+    justify-content: space-between; padding: 10px 28px 0; position: relative; z-index: 1;
+  }
+  .xmas-lights i {
+    width: 12px; height: 16px; border-radius: 50%; display: block;
+    animation: twinkle 2.4s ease-in-out infinite;
+  }
+  .xmas-lights i:nth-child(4n+1) { background: #ef4444; }
+  .xmas-lights i:nth-child(4n+2) { background: #fbbf24; animation-delay: .6s; }
+  .xmas-lights i:nth-child(4n+3) { background: #22c55e; animation-delay: 1.2s; }
+  .xmas-lights i:nth-child(4n)   { background: #60a5fa; animation-delay: 1.8s; }
+  @keyframes twinkle { 50% { opacity: .35; } }
+  .dday {
+    margin-left: 6px; padding: 4px 12px; border-radius: 10px; font-size: 16px; font-weight: 800;
+    background: var(--cream); color: var(--ring);
+  }
+  .hero .deco { position: absolute; font-size: clamp(22px, 3vw, 40px); line-height: 1; }
+  .hero .deco.star { top: 16px; left: 20px; }
+  .hero .deco.gift { bottom: 16px; right: 20px; }
+  body.xmas .card.next { box-shadow: inset 0 6px 0 var(--ring); }
+
+  /* ── 눈: 화면 맨 뒤에서만 내려요 (카드 뒤) ── */
+  body.preload * { transition: none !important; }
+  #snow { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  header, main { position: relative; z-index: 1; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Pretendard, "Pretendard Variable", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    min-height: 100vh;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  /* ── 헤더 ───────────────────────── */
+  header {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
+    padding: 16px 28px;
+  }
+  header .logo { justify-self: start; }
+  header .now-clock { justify-self: center; }
+  header .nav { justify-self: end; justify-content: flex-end; }
+  .logo { font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: #fff; }
+  #titleText span { color: var(--accent); }
+  .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    border: 1px solid var(--line); background: var(--card); border-radius: 12px;
+    padding: 10px 16px; font-weight: 700; font-size: 15px;
+  }
+  .btn:hover { border-color: var(--brand); }
+  .btn.active { background: var(--accent); color: var(--navy); border-color: var(--accent); }
+  .btn.icon { padding: 10px 12px; }
+
+  main { padding: 0 28px 28px; max-width: 1500px; margin: 0 auto; }
+  .hidden { display: none !important; }
+
+  /* ── 학생 화면 ───────────────────── */
+  .grid {
+    display: grid; gap: 20px;
+    grid-template-columns: minmax(0, 2.2fr) minmax(280px, 1fr);
+    grid-template-areas: "hero next" "hero check";
+    grid-template-rows: auto 1fr;
+  }
+  .grid > .hero { grid-area: hero; }
+  .grid > .next { grid-area: next; }
+  .grid > .check { grid-area: check; align-self: start; }
+  .grid > .msg-card { grid-area: msg; }
+  .grid.msg-mode {
+    grid-template-columns: minmax(0, 1.8fr) minmax(340px, 1fr);
+    grid-template-areas: "msg hero" "msg next";
+  }
+  .grid.msg-mode > .check { display: none; }
+  .grid.msg-mode > .hero { min-height: 380px; }
+
+  .msg-card { contain: size; display: flex; flex-direction: column; min-height: 0; }
+  .msg-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .msg-head h3 { margin: 0; }
+  .msg-head button { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 6px 12px; font-weight: 700; }
+  .msg-text {
+    flex: 1; min-height: 0; overflow: hidden; margin-top: 12px;
+    white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere;
+    line-height: 1.4; font-weight: 500; font-size: 60px; outline: none; border-radius: 12px;
+  }
+  .msg-text b, .msg-text strong, .msg-editor b, .msg-editor strong { font-weight: 800; }
+  .msg-text span[style*="background"], .msg-editor span[style*="background"] {
+    border-radius: .15em; padding: 0 .06em; -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
+  .tb { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f8fafc; border-radius: 12px; }
+  .tb-label { font-size: 13px; font-weight: 700; color: var(--muted); margin-left: 8px; }
+  .tb .tb-btn { border: 1px solid var(--line); background: #fff; border-radius: 10px; height: 36px; min-width: 36px; padding: 0 10px; font-weight: 700; font-size: 15px; }
+  .tb .tb-btn:hover { border-color: var(--brand); }
+  .tb .tb-btn.swatch { width: 36px; padding: 0; border: 2px solid rgba(0,0,0,.12); }
+  .tb .tb-btn.fc { font-size: 18px; font-weight: 900; }
+  .msg-field { display: flex; flex-direction: column; gap: 4px; }
+  .msg-field .tb { margin-top: 2px; }
+  .msg-editor {
+    min-height: 140px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: #fff;
+    font-size: 18px; line-height: 1.5; white-space: pre-wrap; word-break: keep-all; outline: none;
+  }
+  .msg-editor:focus { outline: 2px solid var(--brand); border-color: transparent; }
+  .now-clock {
+    display: flex; align-items: baseline; gap: 8px; padding: 6px 20px; border-radius: 16px;
+    background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .now-clock .ampm { font-size: 30px; color: var(--ink2); }
+  .now-clock .hm { font-size: 60px; letter-spacing: -1px; line-height: 1.1; }
+  .now-clock .sec { font-size: 30px; color: var(--muted); }
+  .msg-text[contenteditable="true"] { box-shadow: 0 0 0 3px #c7d2fe; background: #fafaff; padding: 8px; overflow: auto; }
+
+  .hero {
+    position: relative; overflow: hidden; container-type: inline-size;
+    border-radius: var(--radius); color: var(--navy); text-align: center;
+    padding: 36px 24px 32px;
+    background: var(--cream); box-shadow: inset 0 0 0 4px var(--ring);
+    display: flex; flex-direction: column; justify-content: center; min-height: 460px;
+    transition: background .6s, color .6s;
+  }
+  .hero.break { background: #fde68a; color: var(--navy); box-shadow: none; }
+  .hero.lineup { background: linear-gradient(135deg, #f59e0b, #f97316); color: #fff; box-shadow: none; }
+  .hero.lineup .label, .hero.warn.lineupMsg .sub { animation: pulse 1s ease-in-out infinite; }
+  .hero.warn.lineupMsg .sub { font-weight: 800; }
+  .next .lineup-badge {
+    margin-top: 12px; padding: 10px 14px; border-radius: 14px; background: #fff7ed; color: #c2410c;
+    font-size: 18px; font-weight: 800; word-break: keep-all;
+  }
+  .hero.warn {
+    background: var(--warn-bg); color: var(--warn);
+    box-shadow: inset 0 0 0 6px var(--warn);
+  }
+  .hero .date { font-size: 20px; opacity: .9; }
+  .hero .label { font-size: clamp(26px, 3vw, 40px); font-weight: 800; margin-top: 10px; }
+  .hero .big {
+    font-size: clamp(48px, 24cqw, 260px); font-weight: 900; line-height: 1.05; white-space: nowrap;
+    font-variant-numeric: tabular-nums; letter-spacing: -2px; margin: 8px 0;
+  }
+  .hero .big.long { font-size: clamp(40px, 15cqw, 200px); }
+  .hero.warn .big { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.04); } }
+  .hero .sub { font-size: clamp(18px, 2vw, 26px); font-weight: 600; opacity: .95; }
+  .bar { height: 14px; background: var(--track); border-radius: 99px; margin: 22px auto 0; width: min(80%, 720px); overflow: hidden; }
+  .bar > div { height: 100%; background: var(--barc); border-radius: 99px; transition: width 1s linear; }
+  .hero.break .bar, .hero.lineup .bar { background: rgba(255,255,255,.3); }
+  .hero.break .bar > div, .hero.lineup .bar > div { background: #fff; }
+  .hero.break .bar { background: #f5d46a; }
+  .hero.break .bar > div { background: var(--navy); }
+  .hero.break .quick button { background: rgba(255,255,255,.55); border-color: #eac54f; }
+  .hero.warn .bar { background: #fecdd3; }
+  .hero.warn .bar > div { background: var(--warn); }
+  .quick { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 22px; flex-wrap: wrap; }
+  .quick #presetBtns { display: contents; }
+  .quick button {
+    background: #fff; color: inherit; border: 1px solid var(--track);
+    border-radius: 99px; padding: 8px 16px; font-weight: 700; font-size: 15px;
+  }
+  .hero.lineup .quick button { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.4); }
+  .hero.warn .quick button { border-color: #fda4af; background: #fff; }
+  .custom-form {
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px;
+    background: #fff; color: var(--navy); border-radius: 99px; padding: 4px 6px 4px 14px;
+  }
+  .quick button { white-space: nowrap; }
+  .hero .custom-form input[type=number] { width: 64px; border: 1px solid #b6c3e3; border-radius: 8px; padding: 5px 6px; text-align: center; font-weight: 800; font-size: 17px; color: var(--navy); }
+  .hero .quick .custom-form button { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  .side { display: flex; flex-direction: column; gap: 20px; }
+  .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .card h3 { margin: 0 0 14px; font-size: 18px; color: var(--muted); font-weight: 700; }
+
+  .next .period { font-size: 22px; font-weight: 800; color: var(--ink2); }
+  .next .subject { font-size: clamp(44px, 5vw, 72px); font-weight: 900; line-height: 1.15; margin: 6px 0; word-break: keep-all; }
+  .next .time { font-size: 20px; color: var(--muted); font-weight: 600; }
+  .next .supplies {
+    margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: #f3ead7;
+    font-size: 20px; font-weight: 700; word-break: keep-all;
+  }
+  .next .supplies small { display: block; font-size: 14px; color: #8a5a12; margin-bottom: 4px; }
+
+  .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .checklist li {
+    display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 600;
+    padding: 10px 12px; border-radius: 12px; background: #f3ead7; cursor: pointer; user-select: none;
+  }
+  .checklist li .box {
+    width: 28px; height: 28px; border-radius: 8px; border: 2px solid #cbd5e1; flex: none;
+    display: grid; place-items: center; font-size: 18px; color: #fff;
+  }
+  .checklist li.done { color: var(--muted); text-decoration: line-through; }
+  .checklist li.done .box { background: var(--break1); border-color: var(--break1); }
+
+  .timeline { margin-top: 20px; }
+  .chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .chip {
+    border: 2px solid var(--line); border-radius: 16px; padding: 12px; text-align: center; background: var(--card);
+  }
+  .chip .p { font-size: 14px; color: var(--muted); font-weight: 700; }
+  .chip .s { font-size: 22px; font-weight: 800; margin: 2px 0; }
+  .chip .t { font-size: 13px; color: var(--muted); }
+  .chip.past { opacity: .4; }
+  .chip.now { border-color: var(--ring); background: #f3ead7; }
+  .chip.upcoming { border-color: var(--ring); border-style: dashed; background: var(--card); }
+  .empty { color: var(--muted); text-align: center; padding: 10px; }
+
+  /* ── 선생님 설정 ─────────────────── */
+  .settings { display: grid; gap: 20px; max-width: 1100px; margin: 0 auto; }
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .theme-opt {
+    border: 2px solid var(--line); background: #fff; border-radius: 16px; padding: 10px; text-align: left;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .theme-opt.sel { border-color: var(--navy); box-shadow: 0 0 0 3px var(--accent); }
+  #xmasOptions.off { opacity: .45; }
+  .theme-opt .pv { height: 74px; border-radius: 10px; display: grid; place-items: center; }
+  .theme-opt .pv span { background: #fffaf0; border-radius: 8px; padding: 4px 14px; font-weight: 900; font-size: 22px; }
+  .theme-opt b { font-size: 16px; }
+  .theme-opt small { color: var(--muted); font-size: 13px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .seg button { border: 0; background: #fff; padding: 8px 14px; font-weight: 700; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.sel { background: var(--navy); color: #fff; }
+  .settings h2 { margin: 0 0 6px; font-size: 22px; }
+  .settings p.help { margin: 0 0 16px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: 6px; text-align: center; }
+  th { color: var(--muted); font-size: 14px; }
+  .tablewrap { overflow-x: auto; }
+  input[type=text], input[type=time], input[type=number], textarea {
+    width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; background: #fff;
+  }
+  input:focus, textarea:focus { outline: 2px solid var(--brand); border-color: transparent; }
+  textarea { min-height: 110px; resize: vertical; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .supply-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .supply-grid label { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+  .supply-grid label span { min-width: 70px; }
+  .actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; position: sticky; bottom: 16px; }
+  .btn.primary { background: var(--navy); color: #fff; border-color: var(--navy); padding: 12px 22px; }
+  .btn.danger { color: var(--warn); }
+  .toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%);
+    background: #111827; color: #fff; padding: 12px 20px; border-radius: 12px; font-weight: 700;
+    opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 5;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 900px) {
+    .grid, .grid.msg-mode { grid-template-columns: 1fr; grid-template-areas: "hero" "next" "check"; grid-template-rows: auto; }
+    .grid.msg-mode { grid-template-areas: "msg" "hero" "next"; }
+    .msg-card { contain: none; min-height: 50vh; }
+    .now-clock .hm { font-size: 40px; }
+    .now-clock .ampm, .now-clock .sec { font-size: 20px; }
+    header, main { padding-left: 16px; padding-right: 16px; }
+    header { grid-template-columns: 1fr auto; }
+    header .nav { grid-column: 1 / -1; justify-self: stretch; justify-content: flex-start; }
+    .hero { min-height: 340px; }
+  }
+
+  /* ── 전체 화면: 버튼 숨기고 화면 높이에 꽉 맞추기 ── */
+  body.fs { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  body.fs header { padding: 12px 24px 10px; flex: none; }
+  body.fs .nav { display: none; }
+  body.fs .logo { font-size: 30px; }
+  body.fs .now-clock .hm { font-size: 80px; }
+  body.fs .now-clock .ampm, body.fs .now-clock .sec { font-size: 38px; }
+  body.fs main { flex: 1; min-height: 0; max-width: none; width: 100%; padding: 0 24px 20px; display: flex; flex-direction: column; }
+  body.fs #studentView { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  body.fs #teacherView { display: none !important; }
+  body.fs .grid { flex: 1; min-height: 0; grid-template-rows: auto minmax(0, 1fr); }
+  body.fs .grid.msg-mode { grid-template-rows: minmax(0, 1fr) auto; }
+  body.fs .grid > .hero { min-height: 0; }
+  body.fs .hero .big { font-size: min(24cqw, 24vh, 260px); }
+  body.fs .hero .big.long { font-size: min(15cqw, 18vh, 200px); }
+  body.fs .grid.msg-mode > .hero { padding: 16px 20px; }
+  body.fs .grid.msg-mode .hero .date { display: none; }
+  body.fs .grid.msg-mode .hero .bar, body.fs .grid.msg-mode .hero .quick { margin-top: 12px; }
+  body.fs .grid.msg-mode .hero .big { font-size: min(24cqw, 17vh, 220px); }
+  body.fs .grid > .check { align-self: stretch; overflow: auto; }
+  body.fs .timeline { flex: none; margin-top: 16px; padding: 12px 16px; }
+  body.fs .timeline h3 { display: none; }
+  body.fs .chip { padding: 8px; }
+  body.fs .chip .s { font-size: 20px; }
+</style>
+</head>
+<body class="preload">
+<div id="deco" aria-hidden="true"></div>
+<canvas id="snow" aria-hidden="true"></canvas>
+<div class="xmas-lights xmas-only" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<header>
+  <div class="logo"><span id="logoIcon">🔔</span> <div id="titleText">우리 반 <span>쉬는시간</span></div><span class="dday xmas-only" id="dday"></span></div>
+  <div class="now-clock" id="nowClock" title="지금 시각"></div>
+  <div class="nav">
+    <button class="btn active" id="tabStudent">학생 화면</button>
+    <button class="btn" id="tabTeacher">선생님 설정</button>
+    <button class="btn icon hidden" id="mentBtn" title="지금 상황에 보여줄 멘트 쓰기">📝 멘트 쓰기</button>
+    <button class="btn icon" id="xmasBtn" title="크리스마스 테마 켜기/끄기">🎄 크리스마스 꺼짐</button>
+    <button class="btn icon" id="soundBtn" title="알림 소리">🔇 소리 꺼짐</button>
+    <button class="btn icon" id="fullBtn" title="전체 화면">⛶ 전체 화면</button>
+  </div>
+</header>
+
+<main>
+  <!-- 학생 화면 -->
+  <section id="studentView">
+    <div class="grid" id="grid">
+      <div class="card msg-card hidden" id="msgCard">
+        <div class="msg-head">
+          <h3 id="msgTitle"></h3>
+          <button id="msgEdit">✏️ 고치기</button>
+        </div>
+        <div class="tb hidden" id="msgTb"></div>
+        <div class="msg-text" id="msgText"></div>
+      </div>
+      <div class="hero" id="hero">
+        <span class="deco star xmas-only" aria-hidden="true">⭐</span>
+        <span class="deco gift xmas-only" aria-hidden="true">🎁</span>
+        <div class="date" id="dateText"></div>
+        <div class="label" id="labelText"></div>
+        <div class="big" id="bigText">--:--</div>
+        <div class="sub" id="subText"></div>
+        <div class="bar" id="bar"><div id="barFill" style="width:0%"></div></div>
+        <div class="quick" id="quick">
+          <span id="presetBtns"></span>
+          <button id="customBtn">✏️ 직접 설정</button>
+          <span id="customForm" class="custom-form hidden">
+            <input type="number" id="cMin" min="0" max="180" value="5" aria-label="분"> 분
+            <input type="number" id="cSec" min="0" max="59" step="5" value="0" aria-label="초"> 초
+            <button id="cStart">▶ 시작</button>
+            <button id="cClose" title="닫기">✕</button>
+          </span>
+          <button id="pauseManual" class="hidden">⏸ 멈춤</button>
+          <button id="addMin" class="hidden">＋1분</button>
+          <button id="cancelManual" class="hidden">✕ 타이머 끄기</button>
+        </div>
+      </div>
+
+      <div class="card next">
+        <h3>📢 다음 시간</h3>
+        <div id="nextBox"></div>
+      </div>
+      <div class="card check">
+        <h3>✅ 쉬는 시간에 할 일</h3>
+        <ul class="checklist" id="checklist"></ul>
+      </div>
+    </div>
+
+    <div class="card timeline">
+      <h3>🗓 오늘의 시간표</h3>
+      <div class="chips" id="chips"></div>
+    </div>
+  </section>
+
+  <!-- 선생님 설정 -->
+  <section id="teacherView" class="hidden">
+    <div class="settings">
+      <div class="card">
+        <h2>기본 설정</h2>
+        <p class="help">화면 위에 보이는 이름과 경고 시간을 정해요.</p>
+        <div class="row">
+          <label style="flex:2;min-width:220px">반 이름<input type="text" id="setTitle"></label>
+          <label style="flex:1;min-width:180px">빨간색 경고 (초 전부터)<input type="number" id="setWarn" min="10" max="600" step="10"></label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label style="flex:2;min-width:220px">줄 서기 안내 과목 (쉼표로 구분)<input type="text" id="setLineupSubjects" placeholder="예) 영어, 체육"></label>
+          <label style="flex:1;min-width:180px">줄 서기 안내 (분 전부터)<input type="number" id="setLineupMin" min="1" max="10" step="1"></label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label style="flex:1;min-width:220px">즉석 타이머 버튼 (분, 쉼표로 구분 · 최대 6개)<input type="text" id="setPresets" placeholder="예) 3, 5, 10, 15"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🎄 크리스마스 테마</h2>
+        <p class="help">켜면 고른 테마의 색과 배경 장식, 전구, 성탄절 D-day가 나와요. 끄면 기본 남색 화면으로 돌아가요. 학생 화면 위쪽 🎄 버튼으로도 바로 켜고 끌 수 있어요.</p>
+        <div class="row"><b>크리스마스 테마</b><div class="seg" id="xmasSeg"></div></div>
+        <div id="xmasOptions">
+        <div class="theme-grid" id="themeGrid" style="margin-top:14px"></div>
+        <div class="row" style="margin-top:16px">
+          <b>❄️ 눈 내리기</b>
+          <div class="seg" id="snowSeg"></div>
+          <span style="color:var(--muted);font-size:14px">눈은 카드 뒤 배경에만 내려요.</span>
+        </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>교시별 시간 · 주간 시간표</h2>
+        <p class="help">수업이 없는 칸은 비워 두세요. 교시 사이 시간은 자동으로 쉬는 시간이 됩니다 (30분 이상이면 점심시간).</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>교시</th><th>시작</th><th>끝</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th></th></tr></thead>
+            <tbody id="ttBody"></tbody>
+          </table>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="btn" id="addPeriod">＋ 교시 추가</button></div>
+      </div>
+
+      <div class="card">
+        <h2>과목별 준비물</h2>
+        <p class="help">다음 시간 예고에 함께 보여줘요. 시간표에 있는 과목이 자동으로 나타나요.</p>
+        <div class="supply-grid" id="supplyGrid"></div>
+      </div>
+
+      <div class="card">
+        <h2>상황별 멘트</h2>
+        <p class="help">적어 둔 상황이 되면 학생 화면 왼쪽에 큰 글씨로 보여줘요. 비워 두면 멘트 없이 타이머만 나와요. 학생 화면의 ✏️ 고치기 버튼으로 바로 고칠 수도 있어요.</p>
+        <div class="supply-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+          <div class="msg-field"><b>🌞 아침 시간 (1교시 전)</b><div class="tb"></div><div class="msg-editor" contenteditable="true" data-msg="morning"></div></div>
+          <div class="msg-field"><b>☕ 쉬는 시간</b><div class="tb"></div><div class="msg-editor" contenteditable="true" data-msg="break"></div></div>
+          <div class="msg-field"><b>🍚 점심시간</b><div class="tb"></div><div class="msg-editor" contenteditable="true" data-msg="lunch"></div></div>
+          <div class="msg-field"><b>👋 하교 후</b><div class="tb"></div><div class="msg-editor" contenteditable="true" data-msg="done"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>쉬는 시간에 할 일</h2>
+        <p class="help">한 줄에 하나씩 적어 주세요. 쉬는 시간이 새로 시작될 때마다 체크가 초기화돼요.</p>
+        <textarea id="setChecklist"></textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn danger" id="resetBtn">기본값으로 되돌리기</button>
+        <button class="btn primary" id="saveBtn">저장하기</button>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // ───────── 기본값 ─────────
+  const DEFAULTS = {
+    title: '우리 반 쉬는시간',
+    warnSeconds: 60,
+    periods: [
+      { start: '09:10', end: '09:50' },
+      { start: '10:00', end: '10:40' },
+      { start: '10:50', end: '11:30' },
+      { start: '11:40', end: '12:20' },
+      { start: '12:20', end: '13:00' },
+      { start: '13:50', end: '14:30' },
+    ],
+    // 1=월 … 5=금, 각 교시 과목
+    timetable: {
+      1: ['체육', '체육', '실과', '실과', '사회', '사회'],
+      2: ['국어', '국어', '영어', '수학', '수학', '체육'],
+      3: ['국어', '수학', '도덕', '과학', '과학', ''],
+      4: ['국어', '국어', '수학', '영어', '사회', '음악'],
+      5: ['국어', '영어', '미술', '미술', '과학', '음악'],
+    },
+    supplies: { '미술': '물감, 붓, 앞치마', '체육': '운동화, 물병', '영어': '영어책' },
+    // 다음 시간이 이 과목이면 쉬는 시간 끝나기 N분 전에 줄 서기 안내
+    lineupSubjects: ['영어', '체육'],
+    lineupMinutes: 3,
+    timerPresets: [5, 10, 20], // 즉석 타이머 버튼 (분)
+    xmasOn: false,             // 크리스마스 테마 켜기/끄기
+    xmasTheme: 'snow',         // snow(숲) · sleigh(썰매) · green(마을) · red(선물)
+    snow: 'off',               // off · little · normal · heavy
+    // 상황별 멘트 (비워 두면 멘트 없이 타이머만 보여요)
+    messages: {
+      morning: '조용히 아침활동하기\n아침 1인1역 합시다.\n도서관, 화장실 다녀와도 됩니다.\n교과서 미리 준비하세요~\n\n심스페이스 합시다~!!',
+      break: '',
+      lunch: '',
+      done: '',
+    },
+    checklist: ['화장실 다녀오기', '물 마시기', '다음 시간 교과서 꺼내기'],
+  };
+  const KEY = 'breakTimer.settings.v2';
+  const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        const merged = Object.assign(clone(DEFAULTS), saved);
+        merged.messages = Object.assign(clone(DEFAULTS.messages), saved.messages || {});
+        // 예전 방식(theme 하나로 고르기)으로 저장된 설정 옮기기
+        if (saved.xmasOn === undefined && ['snow', 'sleigh', 'green', 'red'].includes(saved.theme)) {
+          merged.xmasOn = true; merged.xmasTheme = saved.theme;
+        }
+        delete merged.theme;
+        return merged;
+      }
+    } catch (e) {}
+    return clone(DEFAULTS);
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  }
+  let S = load();
+
+  // ───────── 시간 (테스트용: ?t=10:29:30&day=2) ─────────
+  const params = new URLSearchParams(location.search);
+  let offset = 0, dayOverride = null;
+  if (params.get('t')) {
+    const [h, m, s] = params.get('t').split(':').map(Number);
+    const target = new Date(); target.setHours(h, m || 0, s || 0, 0);
+    offset = target - Date.now();
+  }
+  if (params.get('day')) dayOverride = Number(params.get('day'));
+  const now = () => new Date(Date.now() + offset);
+  const weekday = (d) => dayOverride ?? d.getDay();
+
+  const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+  const pad = (n) => String(n).padStart(2, '0');
+  function fmtDur(sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  }
+
+  const EMOJI = [
+    ['국어', '📖'], ['수학', '➗'], ['사회', '🌏'], ['과학', '🔬'], ['영어', '🔤'], ['음악', '🎵'],
+    ['미술', '🎨'], ['체육', '⚽'], ['도덕', '🤝'], ['실과', '🛠️'], ['창체', '🌱'], ['창의', '🌱'],
+    ['바른', '🌷'], ['슬기', '🔍'], ['즐거', '🎈'], ['안전', '🦺'], ['정보', '💻'], ['동아리', '🎪'],
+  ];
+  const emojiOf = (name) => (EMOJI.find(([k]) => name.includes(k)) || [, '📚'])[1];
+
+  // 오늘 수업 목록 [{n, name, start, end}] (초 단위, 자정 기준)
+  function classesFor(day) {
+    const row = S.timetable[day] || [];
+    return S.periods
+      .map((p, i) => ({ n: i + 1, name: (row[i] || '').trim(), start: toMin(p.start) * 60, end: toMin(p.end) * 60 }))
+      .filter((c) => c.name);
+  }
+
+  function breakName(gapSec) {
+    if (gapSec >= 30 * 60) return '🍚 점심시간';
+    if (gapSec >= 20 * 60) return '🏃 중간 놀이 시간';
+    return '☕ 쉬는 시간';
+  }
+
+  // 현재 상태 계산
+  function getState(d) {
+    const sec = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1000;
+    const list = classesFor(weekday(d));
+    if (!list.length) return { kind: 'off', list, sec };
+    for (let i = 0; i < list.length; i++) {
+      const c = list[i];
+      if (sec >= c.start && sec < c.end) return { kind: 'class', cur: c, next: list[i + 1], list, sec };
+      if (sec < c.start) {
+        const prevEnd = i ? list[i - 1].end : null;
+        if (prevEnd === null) return { kind: 'morning', next: c, list, sec, from: c.start - 30 * 60 };
+        return { kind: 'break', next: c, list, sec, from: prevEnd, name: breakName(c.start - prevEnd) };
+      }
+    }
+    return { kind: 'done', list, sec };
+  }
+
+  // 다음 수업일 첫 교시 (하교 후 미리보기용)
+  function nextSchoolDay(d) {
+    for (let k = 1; k <= 7; k++) {
+      const wd = (weekday(d) + k) % 7;
+      const list = classesFor(wd);
+      if (list.length) return { wd, first: list[0], k };
+    }
+    return null;
+  }
+
+  // ───────── 소리 (Web Audio) ─────────
+  let audioCtx = null, soundOn = false;
+  function tone(freq, at, dur = 0.6, vol = 0.25) {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(vol, at + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, at + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(at); o.stop(at + dur);
+  }
+  function playWarn() { if (!soundOn || !audioCtx) return; const t = audioCtx.currentTime; tone(880, t, 0.4); tone(880, t + 0.5, 0.4); }
+  function playLineup() {
+    if (!soundOn || !audioCtx) return;
+    const t = audioCtx.currentTime;
+    [523, 659, 784].forEach((f, i) => tone(f, t + i * 0.25, 0.5, 0.25));
+  }
+  function playEnd() {
+    if (!soundOn || !audioCtx) return;
+    const t = audioCtx.currentTime;
+    [659, 523, 587, 392].forEach((f, i) => tone(f, t + i * 0.55, 0.9, 0.3));
+  }
+  const soundBtn = document.getElementById('soundBtn');
+  soundBtn.onclick = () => {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    soundOn = !soundOn;
+    soundBtn.textContent = soundOn ? '🔊 소리 켜짐' : '🔇 소리 꺼짐';
+    if (soundOn) tone(784, audioCtx.currentTime, 0.3, 0.15);
+  };
+
+  // ───────── 수동 타이머 ─────────
+  // manual = { id, end(ms), total(sec), paused, left(sec, 멈췄을 때 남은 시간) }
+  let manual = null, manualSeq = 0;
+  const elq = (id) => document.getElementById(id);
+  function startManual(sec) {
+    sec = Math.round(sec);
+    if (!(sec > 0)) { toast('시간을 1초 이상으로 정해 주세요'); return; }
+    manual = { id: ++manualSeq, end: now().getTime() + sec * 1000, total: sec, paused: false, left: sec };
+    elq('customForm').classList.add('hidden');
+    resetChecks();
+    tick();
+  }
+  function renderPresets() {
+    const wrap = elq('presetBtns');
+    wrap.innerHTML = '';
+    (S.timerPresets || []).forEach((min) => {
+      const b = document.createElement('button');
+      b.textContent = `⏱ ${min}분`;
+      b.onclick = () => startManual(min * 60);
+      wrap.appendChild(b);
+    });
+  }
+  elq('customBtn').onclick = () => {
+    elq('customForm').classList.toggle('hidden');
+    if (!elq('customForm').classList.contains('hidden')) { elq('cMin').focus(); elq('cMin').select(); }
+  };
+  elq('cClose').onclick = () => elq('customForm').classList.add('hidden');
+  elq('cStart').onclick = () => {
+    const m = Math.max(0, Number(elq('cMin').value) || 0);
+    const s = Math.min(59, Math.max(0, Number(elq('cSec').value) || 0));
+    startManual(m * 60 + s);
+  };
+  ['cMin', 'cSec'].forEach((id) => elq(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') elq('cStart').click(); }));
+  elq('pauseManual').onclick = () => {
+    if (!manual) return;
+    const t = now().getTime();
+    if (manual.paused) { manual.end = t + manual.left * 1000; manual.paused = false; }
+    else { manual.left = (manual.end - t) / 1000; manual.paused = true; }
+    tick();
+  };
+  elq('addMin').onclick = () => {
+    if (!manual) return;
+    if (manual.paused) manual.left += 60; else manual.end += 60000;
+    manual.total += 60;
+    manualAdded = true;
+    tick();
+  };
+  let manualAdded = false;
+  elq('cancelManual').onclick = () => { manual = null; tick(); };
+
+  // ───────── 체크리스트 ─────────
+  let checked = new Set();
+  function resetChecks() { checked = new Set(); renderChecklist(); }
+  function renderChecklist() {
+    const ul = document.getElementById('checklist');
+    ul.innerHTML = '';
+    S.checklist.forEach((text, i) => {
+      const li = document.createElement('li');
+      if (checked.has(i)) li.classList.add('done');
+      li.innerHTML = `<span class="box">${checked.has(i) ? '✓' : ''}</span><span></span>`;
+      li.lastChild.textContent = text;
+      li.onclick = () => { checked.has(i) ? checked.delete(i) : checked.add(i); renderChecklist(); };
+      ul.appendChild(li);
+    });
+    if (!S.checklist.length) ul.innerHTML = '<li class="empty">선생님 설정에서 할 일을 적어 주세요.</li>';
+  }
+
+  // ───────── 화면 그리기 ─────────
+  const $ = (id) => document.getElementById(id);
+  const hero = $('hero');
+  let lastKey = '', warned = false, lastPhaseId = '', lineAlerted = false;
+  const needsLineup = (name) => (S.lineupSubjects || []).some((s) => s && name.includes(s));
+  const lineupSec = () => (Number(S.lineupMinutes) || 3) * 60;
+
+  function setHero({ mode, label, big, sub, progress, warn, lineupMsg }) {
+    hero.classList.toggle('break', mode === 'break');
+    hero.classList.toggle('lineup', mode === 'lineup' && !warn);
+    hero.classList.toggle('lineupMsg', !!lineupMsg);
+    hero.classList.toggle('warn', !!warn);
+    $('labelText').textContent = label;
+    $('bigText').textContent = big;
+    $('bigText').classList.toggle('long', big.length > 5);
+    $('subText').textContent = sub || '';
+    $('bar').classList.toggle('hidden', progress == null);
+    if (progress != null) $('barFill').style.width = Math.min(100, Math.max(0, progress * 100)) + '%';
+  }
+
+  function renderNext(st, d) {
+    const box = $('nextBox');
+    let c = st.next, prefix = '';
+    if (!c) {
+      const nd = nextSchoolDay(d);
+      if (!nd) { box.innerHTML = '<div class="empty">시간표가 비어 있어요.</div>'; return; }
+      c = nd.first;
+      prefix = (nd.k === 1 ? '내일' : DAYS[nd.wd] + '요일') + ' ';
+    }
+    const p = S.periods[c.n - 1];
+    const sup = (S.supplies[c.name] || '').trim();
+    const line = needsLineup(c.name);
+    const key = prefix + c.n + c.name + sup + p.start + line + S.lineupMinutes;
+    if (key === lastKey) return;
+    lastKey = key;
+    box.innerHTML = `
+      <div class="period"></div>
+      <div class="subject"></div>
+      <div class="time"></div>
+      ${line ? '<div class="lineup-badge"></div>' : ''}
+      ${sup ? '<div class="supplies"><small>🎒 준비물</small><span></span></div>' : ''}`;
+    if (line) box.querySelector('.lineup-badge').textContent = `🚶 쉬는 시간 끝나기 ${S.lineupMinutes}분 전에 줄 서기!`;
+    box.querySelector('.period').textContent = `${prefix}${c.n}교시`;
+    box.querySelector('.subject').textContent = `${emojiOf(c.name)} ${c.name}`;
+    box.querySelector('.time').textContent = `${p.start} ~ ${p.end}`;
+    if (sup) box.querySelector('.supplies span').textContent = sup;
+  }
+
+  function renderChips(st) {
+    const wrap = $('chips');
+    if (!st.list.length) { wrap.innerHTML = '<div class="empty">오늘은 수업이 없어요. 즐거운 하루 보내요! 🎉</div>'; return; }
+    wrap.innerHTML = '';
+    st.list.forEach((c) => {
+      const el = document.createElement('div');
+      el.className = 'chip';
+      if (st.sec >= c.end) el.classList.add('past');
+      else if (st.cur && st.cur.n === c.n) el.classList.add('now');
+      else if (st.next && st.next.n === c.n && st.kind !== 'class') el.classList.add('upcoming');
+      el.innerHTML = '<div class="p"></div><div class="s"></div><div class="t"></div>';
+      el.querySelector('.p').textContent = `${c.n}교시`;
+      el.querySelector('.s').textContent = `${emojiOf(c.name)} ${c.name}`;
+      el.querySelector('.t').textContent = S.periods[c.n - 1].start;
+      wrap.appendChild(el);
+    });
+  }
+
+  // ───────── 멘트 보드 ─────────
+  const MSG_TITLES = { morning: '🌞 아침 시간', break: '☕ 쉬는 시간', lunch: '🍚 점심시간', done: '👋 하교 시간' };
+  let editing = false, editKey = null, lastMsgSig = '';
+  function msgKeyOf(st) {
+    if (st.kind === 'morning') return 'morning';
+    if (st.kind === 'break') return st.next.start - st.from >= 30 * 60 ? 'lunch' : 'break';
+    if (st.kind === 'done') return 'done';
+    return null;
+  }
+  function fitMsg() {
+    const el = $('msgText');
+    if (editing || $('msgCard').classList.contains('hidden') || !el.clientHeight) return;
+    let size = Math.max(24, Math.min(110, el.clientWidth / 9));
+    el.style.fontSize = size + 'px';
+    while ((el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) && size > 18) {
+      size -= 2; el.style.fontSize = size + 'px';
+    }
+  }
+  // 멘트는 꾸밈(굵게·형광펜·글자색)을 위해 HTML로 저장. 예전 일반 글은 자동 변환.
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const isHtml = (s) => /<\/?(br|div|p|span|b|strong|font|mark)\b[^>]*>/i.test(s);
+  const toHtml = (s) => (!s ? '' : isHtml(s) ? s : esc(s).replace(/\n/g, '<br>'));
+  function plainOf(html) { const t = document.createElement('div'); t.innerHTML = toHtml(html); return t.textContent; }
+  function cleanHtml(html) {
+    const t = document.createElement('div'); t.innerHTML = html;
+    t.querySelectorAll('script,style,iframe,img,object').forEach((n) => n.remove());
+    t.querySelectorAll('*').forEach((n) => [...n.attributes].forEach((a) => { if (a.name !== 'style') n.removeAttribute(a.name); }));
+    if (!t.textContent.trim()) return '';
+    return t.innerHTML.replace(/(<br\s*\/?>|<div><br><\/div>|\s)+$/i, '');
+  }
+
+  const HIGHLIGHTS = [['노랑', '#fff176'], ['연두', '#b2f2bb'], ['분홍', '#ffc9de'], ['하늘', '#a5d8ff'], ['주황', '#ffd8a8']];
+  const TEXT_COLORS = [['빨강', '#e03131'], ['파랑', '#1c7ed6'], ['초록', '#2f9e44'], ['검정', '#1f2937']];
+  function exec(cmd, val) {
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand(cmd, false, val);
+  }
+  // 도구막대: 굵게 · 형광펜 5색 · 글자색 4색 · 꾸밈 지우기
+  function buildToolbar(tb, editable) {
+    tb.innerHTML = '';
+    const add = (html, title, fn, cls) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tb-btn ' + (cls || ''); b.innerHTML = html; b.title = title;
+      b.addEventListener('mousedown', (e) => e.preventDefault()); // 선택 영역 유지
+      b.addEventListener('click', () => { if (document.activeElement !== editable) editable.focus(); fn(); });
+      tb.appendChild(b); return b;
+    };
+    const label = (t) => { const s = document.createElement('span'); s.className = 'tb-label'; s.textContent = t; tb.appendChild(s); };
+    add('<b>가</b> 굵게', '굵게 (Ctrl+B)', () => exec('bold'), 'bold');
+    label('🔠 크기');
+    add('<span style="font-size:19px">가</span>+', '고른 글씨 크게', () => resizeSel(editable, 1.25), 'size-up');
+    add('<span style="font-size:12px">가</span>−', '고른 글씨 작게', () => resizeSel(editable, 0.8), 'size-down');
+    label('🖍 형광펜');
+    HIGHLIGHTS.forEach(([n, c]) => { add('', n + ' 형광펜', () => exec('hiliteColor', c), 'swatch').style.background = c; });
+    label('🎨 글자색');
+    TEXT_COLORS.forEach(([n, c]) => { add('가', n + ' 글자', () => exec('foreColor', c), 'fc').style.color = c; });
+    add('🧽 지우기', '고른 글자의 꾸밈 지우기', () => { exec('removeFormat'); exec('hiliteColor', 'transparent'); }, 'erase');
+  }
+  // 고른 글씨 크기를 주변 글씨 기준으로 키우기/줄이기 (em 단위라 자동 맞춤과 함께 작동)
+  function resizeSel(editable, factor) {
+    const sel = getSelection();
+    if (!sel.rangeCount || sel.isCollapsed || !editable.contains(sel.anchorNode)) {
+      toast('크기를 바꿀 글자를 먼저 드래그해서 골라 주세요');
+      return;
+    }
+    const base = parseFloat(getComputedStyle(editable).fontSize);
+    const ratioOf = (node) => {
+      const elx = node.nodeType === 1 ? node : node.parentElement;
+      return parseFloat(getComputedStyle(elx).fontSize) / base;
+    };
+    const rg = sel.getRangeAt(0);
+    let startNode = rg.startContainer;
+    if (startNode.nodeType === 1 && startNode.childNodes[rg.startOffset]) startNode = startNode.childNodes[rg.startOffset];
+    const target = Math.min(3, Math.max(0.4, ratioOf(startNode) * factor));
+    document.execCommand('styleWithCSS', false, false);
+    document.execCommand('fontSize', false, '7');
+    const made = [...editable.querySelectorAll('font[size="7"]')].map((f) => {
+      const s = document.createElement('span');
+      s.style.fontSize = (target / ratioOf(f.parentElement)).toFixed(3).replace(/\.?0+$/, '') + 'em';
+      while (f.firstChild) s.appendChild(f.firstChild);
+      f.replaceWith(s);
+      return s;
+    });
+    if (made.length) {
+      const r = document.createRange();
+      const last = made[made.length - 1];
+      r.setStart(made[0], 0); r.setEnd(last, last.childNodes.length);
+      sel.removeAllRanges(); sel.addRange(r);
+    }
+  }
+  function plainPaste(el) {
+    el.addEventListener('paste', (e) => {
+      e.preventDefault();
+      document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
+    });
+  }
+
+  function renderMsg(st) {
+    const key = editing ? editKey : msgKeyOf(st);
+    const text = key ? (S.messages[key] || '') : '';
+    const show = editing || !!plainOf(text).trim();
+    $('grid').classList.toggle('msg-mode', show);
+    $('msgCard').classList.toggle('hidden', !show);
+    $('mentBtn').classList.toggle('hidden', !msgKeyOf(st) || show);
+    if (editing) return;
+    const sig = key + '|' + text + '|' + show;
+    if (sig === lastMsgSig) return;
+    lastMsgSig = sig;
+    $('msgTitle').textContent = '📝 ' + (MSG_TITLES[key] || '');
+    $('msgText').innerHTML = toHtml(text);
+    requestAnimationFrame(fitMsg);
+  }
+  function startEdit(key) {
+    const wasHidden = $('msgCard').classList.contains('hidden');
+    editing = true; editKey = key;
+    const el = $('msgText');
+    el.innerHTML = toHtml(S.messages[key] || '');
+    $('msgTitle').textContent = '📝 ' + MSG_TITLES[key] + ' 멘트';
+    $('grid').classList.add('msg-mode');
+    $('msgCard').classList.remove('hidden');
+    $('mentBtn').classList.add('hidden');
+    if (wasHidden) el.style.fontSize = '56px';
+    el.contentEditable = 'true';
+    $('msgTb').classList.remove('hidden');
+    $('msgEdit').textContent = '💾 저장';
+    el.focus();
+    const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  function finishEdit() {
+    const el = $('msgText');
+    S.messages[editKey] = cleanHtml(el.innerHTML);
+    persist();
+    el.contentEditable = 'false';
+    $('msgTb').classList.add('hidden');
+    editing = false; editKey = null; lastMsgSig = '';
+    $('msgEdit').textContent = '✏️ 고치기';
+    toast('✅ 멘트를 저장했어요!');
+    tick();
+  }
+  $('msgEdit').onclick = () => {
+    if (editing) return finishEdit();
+    const key = msgKeyOf(getState(now()));
+    if (key) startEdit(key);
+  };
+  $('mentBtn').onclick = () => { const key = msgKeyOf(getState(now())); if (key) startEdit(key); };
+  window.addEventListener('resize', () => requestAnimationFrame(fitMsg));
+  buildToolbar($('msgTb'), $('msgText'));
+  plainPaste($('msgText'));
+  document.querySelectorAll('.msg-field').forEach((f) => {
+    const ed = f.querySelector('.msg-editor');
+    buildToolbar(f.querySelector('.tb'), ed);
+    plainPaste(ed);
+  });
+
+  function tick() {
+    const d = now();
+    const st = getState(d);
+    $('dateText').textContent = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${DAYS[d.getDay()]}요일`;
+    const h12 = d.getHours() % 12 || 12;
+    const clock = `${h12}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    $('nowClock').innerHTML = `<span class="ampm">${d.getHours() < 12 ? '오전' : '오후'}</span><span class="hm">${h12}:${pad(d.getMinutes())}</span><span class="sec">${pad(d.getSeconds())}초</span>`;
+    const warnSec = Number(S.warnSeconds) || 60;
+    let phaseId, left = null;
+
+    ['cancelManual', 'pauseManual', 'addMin'].forEach((id) => $(id).classList.toggle('hidden', !manual));
+    $('presetBtns').classList.toggle('hidden', !!manual);
+    $('customBtn').classList.toggle('hidden', !!manual);
+    if (manual) $('pauseManual').textContent = manual.paused ? '▶ 계속' : '⏸ 멈춤';
+
+    if (manual) {
+      left = manual.paused ? manual.left : (manual.end - d.getTime()) / 1000;
+      phaseId = 'manual' + manual.id;
+      if (left <= 0) {
+        manual = null; playEnd(); warned = false;
+        return tick();
+      }
+      if (manualAdded) { manualAdded = false; if (left > warnSec) warned = false; }
+      setHero({
+        mode: 'break', label: manual.paused ? '⏸ 잠시 멈춤' : '⏱ 타이머', big: fmtDur(left),
+        sub: manual.paused ? '계속하려면 ▶ 계속을 눌러요' : left <= warnSec ? '곧 끝나요! 자리에 앉을 준비를 해요.' : '타이머가 끝날 때까지 남은 시간',
+        progress: left / manual.total, warn: !manual.paused && left <= warnSec,
+      });
+    } else if (st.kind === 'break' || st.kind === 'morning') {
+      const total = st.next.start - st.from;
+      left = st.next.start - st.sec;
+      phaseId = 'break' + st.next.n;
+      const lineNow = needsLineup(st.next.name) && left <= lineupSec();
+      let label = st.kind === 'morning' ? '🌞 아침 시간' : st.name;
+      let sub = left <= warnSec ? '🚨 곧 수업이 시작돼요! 자리에 앉아요.' : `${st.next.n}교시 시작까지 남은 시간`;
+      if (lineNow) {
+        label = '🚶 줄 서기 시간!';
+        sub = `${emojiOf(st.next.name)} 다음은 ${st.next.name} 시간이에요. 복도에 줄을 서요!`;
+        if (!lineAlerted) { lineAlerted = true; playLineup(); }
+      }
+      setHero({
+        mode: lineNow ? 'lineup' : 'break', label, big: fmtDur(left), sub,
+        progress: left / total, warn: left <= warnSec, lineupMsg: lineNow,
+      });
+    } else if (st.kind === 'class') {
+      phaseId = 'class' + st.cur.n;
+      const total = st.cur.end - st.cur.start;
+      const remain = st.cur.end - st.sec;
+      setHero({
+        mode: 'class', label: `${st.cur.n}교시 · ${emojiOf(st.cur.name)} ${st.cur.name} 수업 중`, big: fmtDur(remain),
+        sub: '수업 끝까지 남은 시간', progress: remain / total, warn: false,
+      });
+    } else if (st.kind === 'done') {
+      phaseId = 'done';
+      setHero({ mode: 'class', label: '오늘의 일정이 끝났어요 👋', big: clock, sub: '오늘도 수고했어요!', progress: null });
+    } else {
+      phaseId = 'off';
+      setHero({ mode: 'class', label: '오늘은 수업이 없어요', big: clock, sub: '', progress: null });
+    }
+
+    // 상태 전환 → 소리 · 체크리스트 초기화
+    if (phaseId !== lastPhaseId) {
+      const wasCountdown = /^break/.test(lastPhaseId);
+      if (lastPhaseId && wasCountdown && phaseId.startsWith('class')) playEnd();
+      if (phaseId.startsWith('break') || phaseId.startsWith('manual')) resetChecks();
+      lastPhaseId = phaseId; warned = false; lineAlerted = false;
+    }
+    if (left != null && left <= warnSec && !warned) { warned = true; playWarn(); }
+
+    renderNext(st, d);
+    renderChips(st);
+    renderMsg(st);
+  }
+
+  // ───────── 선생님 설정 ─────────
+  let draft;
+  function buildSettings() {
+    draft = clone(S);
+    $('setTitle').value = draft.title;
+    $('setWarn').value = draft.warnSeconds;
+    $('setChecklist').value = draft.checklist.join('\n');
+    $('setLineupSubjects').value = (draft.lineupSubjects || []).join(', ');
+    $('setLineupMin').value = draft.lineupMinutes;
+    $('setPresets').value = (draft.timerPresets || []).join(', ');
+    renderThemePicker();
+    document.querySelectorAll('[data-msg]').forEach((t) => { t.innerHTML = toHtml(draft.messages[t.dataset.msg] || ''); });
+    renderTT();
+    renderSupplies();
+  }
+  function renderTT() {
+    const body = $('ttBody');
+    body.innerHTML = '';
+    draft.periods.forEach((p, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<th>${i + 1}교시</th>
+        <td><input type="time" data-k="start" value="${p.start}"></td>
+        <td><input type="time" data-k="end" value="${p.end}"></td>
+        ${[1, 2, 3, 4, 5].map((day) => `<td><input type="text" data-day="${day}" style="min-width:70px"></td>`).join('')}
+        <td><button class="btn icon" title="이 교시 삭제">🗑</button></td>`;
+      tr.querySelectorAll('[data-day]').forEach((inp) => {
+        const day = inp.dataset.day;
+        inp.value = (draft.timetable[day] || [])[i] || '';
+        inp.oninput = () => { (draft.timetable[day] ||= [])[i] = inp.value; renderSupplies(); };
+      });
+      tr.querySelectorAll('[data-k]').forEach((inp) => { inp.oninput = () => { p[inp.dataset.k] = inp.value; }; });
+      tr.querySelector('button').onclick = () => {
+        draft.periods.splice(i, 1);
+        Object.values(draft.timetable).forEach((row) => row.splice(i, 1));
+        renderTT(); renderSupplies();
+      };
+      body.appendChild(tr);
+    });
+  }
+  function renderSupplies() {
+    const grid = $('supplyGrid');
+    const subjects = [...new Set(Object.values(draft.timetable).flat().map((s) => (s || '').trim()).filter(Boolean))];
+    const focused = document.activeElement?.dataset?.subject;
+    grid.innerHTML = '';
+    subjects.forEach((name) => {
+      const lab = document.createElement('label');
+      lab.innerHTML = '<span></span><input type="text" placeholder="예) 교과서, 색연필">';
+      lab.firstChild.textContent = `${emojiOf(name)} ${name}`;
+      const inp = lab.lastChild;
+      inp.dataset.subject = name;
+      inp.value = draft.supplies[name] || '';
+      inp.oninput = () => { draft.supplies[name] = inp.value; };
+      grid.appendChild(lab);
+      if (focused === name) inp.focus();
+    });
+  }
+  $('addPeriod').onclick = () => {
+    const last = draft.periods[draft.periods.length - 1];
+    const startMin = last ? toMin(last.end) + 10 : 9 * 60;
+    const f = (m) => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`;
+    draft.periods.push({ start: f(startMin), end: f(startMin + 40) });
+    renderTT();
+  };
+  $('saveBtn').onclick = () => {
+    for (const p of draft.periods) {
+      if (!p.start || !p.end || toMin(p.end) <= toMin(p.start)) { toast('⚠️ 교시의 끝 시간이 시작 시간보다 늦어야 해요.'); return; }
+    }
+    draft.title = $('setTitle').value.trim() || DEFAULTS.title;
+    draft.warnSeconds = Math.max(10, Number($('setWarn').value) || 60);
+    draft.checklist = $('setChecklist').value.split('\n').map((s) => s.trim()).filter(Boolean);
+    draft.lineupSubjects = $('setLineupSubjects').value.split(',').map((s) => s.trim()).filter(Boolean);
+    draft.lineupMinutes = Math.min(10, Math.max(1, Number($('setLineupMin').value) || 3));
+    draft.timerPresets = $('setPresets').value.split(',').map((s) => Math.round(Number(s.trim()) * 10) / 10)
+      .filter((n) => n > 0 && n <= 180).slice(0, 6);
+    document.querySelectorAll('[data-msg]').forEach((t) => { draft.messages[t.dataset.msg] = cleanHtml(t.innerHTML); });
+    lastMsgSig = '';
+    S = draft;
+    persist();
+    applyTitle(); applyTheme(); lastKey = ''; renderChecklist(); renderPresets(); tick();
+    toast('✅ 저장했어요!');
+  };
+  $('resetBtn').onclick = () => {
+    if (!confirm('모든 설정을 처음 상태로 되돌릴까요?')) return;
+    S = clone(DEFAULTS); persist(); buildSettings(); applyTitle(); applyTheme(); lastKey = ''; renderChecklist(); renderPresets(); tick();
+    toast('기본값으로 되돌렸어요.');
+  };
+
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+  function applyTitle() {
+    const t = S.title;
+    const i = t.lastIndexOf(' ');
+    const el = $('titleText');
+    el.textContent = i > 0 ? t.slice(0, i + 1) : '';
+    const span = document.createElement('span'); span.textContent = i > 0 ? t.slice(i + 1) : t;
+    el.appendChild(span);
+    document.title = t;
+  }
+
+  // ───────── 탭 · 전체화면 · 화면 꺼짐 방지 ─────────
+  function show(view) {
+    const isS = view === 'student';
+    $('studentView').classList.toggle('hidden', !isS);
+    $('teacherView').classList.toggle('hidden', isS);
+    $('tabStudent').classList.toggle('active', isS);
+    $('tabTeacher').classList.toggle('active', !isS);
+    if (!isS) buildSettings();
+  }
+  $('tabStudent').onclick = () => show('student');
+  $('tabTeacher').onclick = () => show('teacher');
+  $('fullBtn').onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.();
+  };
+  document.addEventListener('fullscreenchange', () => {
+    const on = !!document.fullscreenElement;
+    if (on && editing) finishEdit();
+    if (on) { show('student'); toast('ESC를 누르면 전체 화면이 꺼져요'); }
+    document.body.classList.toggle('fs', on);
+    requestAnimationFrame(fitMsg);
+  });
+  let wakeLock = null;
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.onrelease = () => { wakeLock = null; }; } } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+  document.addEventListener('click', keepAwake, { once: true });
+
+  // ───────── 테마 · 크리스마스 · 눈 ─────────
+  const THEMES = [
+    { id: 'default', name: '기본 (남색)', desc: '차분한 남색 바탕', bg: '#1e3a8a', ink: '#1e3a8a', ring: '#1e3a8a' },
+    { id: 'snow', name: '🌲 눈 덮인 숲', desc: '남색 + 눈 언덕과 트리 숲', bg: '#1e3a8a', ink: '#1e3a8a', ring: '#c0262d' },
+    { id: 'sleigh', name: '🦌 산타 썰매 밤하늘', desc: '밤하늘 + 달 + 날아가는 루돌프', bg: '#16285e', ink: '#1e3a8a', ring: '#c8962e' },
+    { id: 'green', name: '🏘️ 크리스마스 마을', desc: '진초록 + 눈사람과 불 켜진 집', bg: '#1f5133', ink: '#1f5133', ring: '#b91c1c' },
+    { id: 'red', name: '🎁 오너먼트와 선물', desc: '진빨강 + 오너먼트와 선물 상자', bg: '#9b1c24', ink: '#9b1c24', ring: '#1f5133' },
+  ];
+  const XMAS = ['snow', 'sleigh', 'green', 'red'];
+
+  // ── 배경 장식 그림 (SVG) ──
+  const svg = (vb, w, h, body) => `<svg viewBox="${vb}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+  const treeSvg = (c, w, snowy = true) => svg('-35 -65 70 80', w, w * 80 / 70,
+    `<rect x="-4" y="0" width="8" height="14" fill="#5b3a1e"/><polygon points="0,-62 -27,-16 27,-16" fill="${c}"/><polygon points="0,-46 -33,0 33,0" fill="${c}"/>` +
+    (snowy ? '<polygon points="0,-62 -9,-46 9,-46" fill="#fff"/><path d="M-27,-16 q13,7 27,0 q13,7 27,0" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M-33,0 q16,7 33,0 q16,7 33,0" fill="none" stroke="#fff" stroke-width="3.5"/>' : '') +
+    '<polygon points="0,-70 2.5,-64 9,-64 4,-60 6,-54 0,-58 -6,-54 -4,-60 -9,-64 -2.5,-64" fill="#fcd34d"/>');
+  const snowmanSvg = (w) => svg('-24 -52 48 70', w, w * 70 / 48,
+    '<circle cy="0" r="17" fill="#fff"/><circle cy="-25" r="12" fill="#fff"/><circle cx="-4" cy="-27" r="1.8" fill="#222"/><circle cx="4" cy="-27" r="1.8" fill="#222"/>' +
+    '<polygon points="0,-24 10,-22 0,-21" fill="#f97316"/><path d="M-12,-15 h24" stroke="#c0262d" stroke-width="5"/><rect x="-11" y="-40" width="22" height="4" fill="#222"/><rect x="-7" y="-51" width="14" height="12" fill="#222"/>' +
+    '<circle cy="-4" r="1.8" fill="#222"/><circle cy="4" r="1.8" fill="#222"/>');
+  const houseSvg = (c, w) => svg('-26 -46 52 48', w, w * 48 / 52,
+    `<rect x="-20" y="-24" width="40" height="26" fill="${c}"/><polygon points="-25,-24 0,-44 25,-24" fill="#fff"/><rect x="10" y="-42" width="6" height="12" fill="#5b3a1e"/>` +
+    '<rect x="-13" y="-17" width="9" height="9" fill="#fcd34d"/><rect x="4" y="-17" width="9" height="9" fill="#fcd34d"/><rect x="-4" y="-8" width="8" height="10" fill="#5b3a1e"/>');
+  const giftSvg = (c, r, w, h) => svg(`0 -14 ${w} ${h + 14}`, w, h + 14,
+    `<rect x="0" y="0" width="${w}" height="${h}" fill="${c}"/><rect x="${w / 2 - 4}" y="0" width="8" height="${h}" fill="${r}"/><rect x="0" y="${h / 2 - 4}" width="${w}" height="8" fill="${r}"/>` +
+    `<path d="M${w / 2},0 q-14,-16 -19,-3 q5,8 19,3 q14,-16 19,-3 q-5,8 -19,3" fill="${r}"/>`);
+  const ornSvg = (c, len) => svg(`-14 0 28 ${len + 30}`, 28, len + 30,
+    `<line x1="0" y1="0" x2="0" y2="${len}" stroke="#e9c46a" stroke-width="1.5"/><rect x="-4" y="${len - 2}" width="8" height="6" fill="#e9c46a"/>` +
+    `<circle cx="0" cy="${len + 15}" r="12" fill="${c}"/><circle cx="-4" cy="${len + 10}" r="3.5" fill="#fff" opacity=".6"/>`);
+  const deerSvg = (c, nose) => `<g fill="${c}" stroke="${c}"><ellipse cx="0" cy="0" rx="15" ry="6.5"/><path d="M12,-3 l9,-10 l4,1 l-7,11z"/><circle cx="24" cy="-12" r="3.5"/>` +
+    `<path d="M23,-15 l-3,-9 m3,9 l4,-10 m-4,1 l-6,-3 m9,2 l5,-3" fill="none" stroke-width="1.8"/><path d="M-11,4 l-7,10 M-5,5 l-2,11 M6,5 l4,10 M11,4 l8,8" stroke-width="2.6" fill="none"/>` +
+    (nose ? '<circle cx="28" cy="-11" r="2.6" fill="#ef4444" stroke="none"/>' : '') + '</g>';
+  const sleighSvg = () => svg('-130 -40 190 64', 280, 94,
+    `<g transform="translate(36,0)">${deerSvg('#0b1640', true)}</g><g transform="translate(0,4)">${deerSvg('#0b1640', false)}</g>` +
+    '<line x1="-40" y1="8" x2="22" y2="2" stroke="#0b1640" stroke-width="1.2"/><path d="M-80,-6 h30 l5,16 h-38 q-7,0 -5,-9z" fill="#c0262d"/><path d="M-86,16 h46" stroke="#e9c46a" stroke-width="3"/>' +
+    '<circle cx="-70" cy="-13" r="7" fill="#c0262d"/><circle cx="-70" cy="-20" r="3" fill="#fff"/><path d="M-62,-10 h12 v-8 h-12z" fill="#7c2d12"/>');
+  const moonSvg = (w) => svg('0 0 60 60', w, w, '<circle cx="30" cy="30" r="26" fill="#fef3c7"/><circle cx="20" cy="22" r="26" fill="#16285e"/>');
+  const starSvg = (w, c) => svg('-10 -10 20 20', w, w, `<polygon points="0,-9 2.6,-3 9,-3 4,1.5 6,8 0,4.2 -6,8 -4,1.5 -9,-3 -2.6,-3" fill="${c}"/>`);
+  const at = (html, css) => `<span style="${css}">${html}</span>`;
+
+  function buildDeco(theme) {
+    const L = (pct, bottom, html) => at(html, `left:${pct}%;bottom:${bottom}px`);
+    const R = (pct, bottom, html) => at(html, `right:${pct}%;bottom:${bottom}px`);
+    if (theme === 'snow') {
+      const g = '#14532d';
+      return '<span class="hill"></span>' +
+        L(0, 30, treeSvg(g, 110)) + L(5, 40, treeSvg(g, 80)) + L(9, 28, treeSvg(g, 95)) + L(30, 34, treeSvg(g, 70)) +
+        R(30, 34, treeSvg(g, 75)) + R(9, 28, treeSvg(g, 95)) + R(4.5, 40, treeSvg(g, 80)) + R(0, 30, treeSvg(g, 110));
+    }
+    if (theme === 'sleigh') {
+      let stars = '';
+      for (let i = 0; i < 26; i++) stars += at(starSvg(8 + (i % 3) * 5, '#e9c46a'), `left:${(i * 37) % 100}%;top:${(i * 53) % 100}%;opacity:.55`);
+      return stars + at(moonSvg(90), 'right:2%;top:110px') + `<span class="sleigh">${sleighSvg()}</span>` +
+        L(0, 0, treeSvg('#0b1640', 90, false)) + L(5, 0, treeSvg('#0b1640', 60, false)) + R(5, 0, treeSvg('#0b1640', 60, false)) + R(0, 0, treeSvg('#0b1640', 90, false));
+    }
+    if (theme === 'green') {
+      return '<span class="ground"></span>' +
+        L(0.5, 40, houseSvg('#9b1c24', 100)) + L(7, 40, snowmanSvg(56)) + L(11.5, 38, treeSvg('#0f3d24', 80)) + L(32, 40, houseSvg('#7c2d12', 70)) +
+        R(32, 40, snowmanSvg(48)) + R(11.5, 38, treeSvg('#0f3d24', 80)) + R(7, 40, snowmanSvg(56)) + R(0.5, 40, houseSvg('#7c2d12', 100));
+    }
+    if (theme === 'red') {
+      const side = (side, list) => list.map(([pos, len, c]) => at(ornSvg(c, len), `${side}:${pos}%;top:0`)).join('');
+      return side('left', [[0.3, 160, '#fcd34d'], [1.6, 260, '#1f5133'], [2.9, 120, '#fffaf0']]) +
+        side('right', [[0.3, 200, '#1f5133'], [1.6, 110, '#fcd34d'], [2.9, 280, '#fffaf0']]) +
+        L(0.5, 0, giftSvg('#1f5133', '#fcd34d', 70, 74)) + L(5, 0, giftSvg('#fcd34d', '#1f5133', 54, 50)) + L(9, 0, giftSvg('#fffaf0', '#c0262d', 46, 60)) +
+        R(9, 0, giftSvg('#fcd34d', '#1f5133', 50, 56)) + R(5, 0, giftSvg('#fffaf0', '#1f5133', 56, 66)) + R(0.5, 0, giftSvg('#1f5133', '#fcd34d', 72, 82));
+    }
+    return '';
+  }
+  const SNOW_LEVELS = [['off', '끄기', 0], ['little', '조금', 50], ['normal', '보통', 120], ['heavy', '펑펑', 260]];
+
+  function applyTheme() {
+    const theme = S.xmasOn && XMAS.includes(S.xmasTheme) ? S.xmasTheme : 'default';
+    $('xmasBtn').classList.toggle('active', !!S.xmasOn);
+    $('xmasBtn').textContent = S.xmasOn ? '🎄 크리스마스 켜짐' : '🎄 크리스마스 꺼짐';
+    document.body.dataset.theme = theme;
+    const xmas = XMAS.includes(theme);
+    document.body.classList.toggle('xmas', xmas);
+    $('logoIcon').textContent = xmas ? '🎄' : '🔔';
+    const deco = buildDeco(theme);
+    $('deco').innerHTML = deco;
+    document.body.classList.toggle('has-deco', !!deco);
+    updateDday();
+    const lv = SNOW_LEVELS.find((l) => l[0] === S.snow) || SNOW_LEVELS[0];
+    setSnow(S.xmasOn ? lv[2] : 0); // 눈은 크리스마스 테마를 켰을 때만
+  }
+  // 학생 화면 위쪽 버튼으로 바로 켜고 끄기
+  $('xmasBtn').onclick = () => {
+    S.xmasOn = !S.xmasOn;
+    if (S.xmasOn && S.snow === 'off') S.snow = 'normal';
+    persist();
+    applyTheme();
+    toast(S.xmasOn ? '🎄 크리스마스 테마를 켰어요' : '크리스마스 테마를 껐어요');
+  };
+  function updateDday() {
+    const d = now();
+    const today = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    let xmasDay = new Date(d.getFullYear(), 11, 25);
+    if (today > xmasDay) xmasDay = new Date(d.getFullYear() + 1, 11, 25);
+    const days = Math.round((xmasDay - today) / 86400000);
+    $('dday').textContent = days === 0 ? '🎅 메리 크리스마스!' : `성탄절 D-${days}`;
+  }
+
+  function renderThemePicker() {
+    // 크리스마스 켜기 / 끄기
+    const xs = $('xmasSeg');
+    xs.innerHTML = '';
+    [[false, '끄기'], [true, '켜기']].forEach(([on, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (!!draft.xmasOn === on) b.className = 'sel';
+      b.onclick = () => { draft.xmasOn = on; if (on && draft.snow === 'off') draft.snow = 'normal'; renderThemePicker(); };
+      xs.appendChild(b);
+    });
+    $('xmasOptions').classList.toggle('off', !draft.xmasOn);
+
+    // 크리스마스 테마 4가지 중 고르기
+    const grid = $('themeGrid');
+    grid.innerHTML = '';
+    THEMES.filter((t) => XMAS.includes(t.id)).forEach((t) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'theme-opt' + (draft.xmasTheme === t.id ? ' sel' : '');
+      b.innerHTML = `<div class="pv" style="background:${t.bg}"><span style="color:${t.ink};box-shadow:inset 0 0 0 3px ${t.ring}">05:56</span></div><b></b><small></small>`;
+      b.querySelector('b').textContent = t.name;
+      b.querySelector('small').textContent = t.desc;
+      b.onclick = () => {
+        draft.xmasTheme = t.id;
+        if (!draft.xmasOn) { draft.xmasOn = true; if (draft.snow === 'off') draft.snow = 'normal'; }
+        renderThemePicker();
+      };
+      grid.appendChild(b);
+    });
+    const seg = $('snowSeg');
+    seg.innerHTML = '';
+    SNOW_LEVELS.forEach(([id, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if ((draft.snow || 'off') === id) b.className = 'sel';
+      b.onclick = () => { draft.snow = id; renderThemePicker(); };
+      seg.appendChild(b);
+    });
+  }
+
+  // 눈: 화면 맨 뒤 캔버스에 그려서 카드(타이머 등)를 가리지 않아요
+  const snowCv = $('snow'), snowCtx = snowCv.getContext('2d');
+  let flakes = [], snowTarget = 0, snowRunning = false, sw = 0, sh = 0;
+  const dpr = () => window.devicePixelRatio || 1;
+  function sizeSnow() {
+    sw = window.innerWidth; sh = window.innerHeight;
+    snowCv.width = sw * dpr(); snowCv.height = sh * dpr();
+    snowCtx.setTransform(dpr(), 0, 0, dpr(), 0, 0);
+  }
+  const newFlake = (top) => ({
+    x: Math.random() * sw, y: top ? -10 : Math.random() * sh,
+    r: 1.5 + Math.random() * 3, v: 0.4 + Math.random() * 1.1, d: Math.random() * 6.28, o: 0.5 + Math.random() * 0.5,
+  });
+  function setSnow(n) {
+    snowTarget = n;
+    while (flakes.length < n) flakes.push(newFlake(false));
+    flakes.length = n;
+    snowCv.style.display = n ? 'block' : 'none';
+    if (n && !snowRunning) { snowRunning = true; requestAnimationFrame(snowFrame); }
+  }
+  function snowFrame() {
+    if (!snowTarget) { snowRunning = false; snowCtx.clearRect(0, 0, sw, sh); return; }
+    snowCtx.clearRect(0, 0, sw, sh);
+    snowCtx.fillStyle = '#fff';
+    for (const f of flakes) {
+      f.d += 0.01; f.y += f.v; f.x += Math.sin(f.d) * 0.5;
+      if (f.y > sh + 5) Object.assign(f, newFlake(true));
+      if (f.x > sw + 5) f.x = -5; else if (f.x < -5) f.x = sw + 5;
+      snowCtx.globalAlpha = f.o;
+      snowCtx.beginPath(); snowCtx.arc(f.x, f.y, f.r, 0, 6.28); snowCtx.fill();
+    }
+    snowCtx.globalAlpha = 1;
+    requestAnimationFrame(snowFrame);
+  }
+  sizeSnow();
+  window.addEventListener('resize', sizeSnow);
+  setInterval(updateDday, 60000);
+
+  applyTitle();
+  applyTheme();
+  setTimeout(() => document.body.classList.remove("preload"), 300);
+  renderPresets();
+  renderChecklist();
+  tick();
+  keepAwake();
+  setInterval(tick, 250);
+})();
+</script>
+</body>
+</html>
